@@ -1,0 +1,42 @@
+package com.tomgibara.ezo;
+
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+
+import javax.imageio.ImageIO;
+
+import com.tomgibara.ezo.Ezo;
+import com.tomgibara.ezo.Ezo.Renderer;
+
+public class EzoKerner {
+
+	public static void main(String... args) throws IOException {
+		checkKern(false);
+		checkKern(true);
+	}
+
+	private static void checkKern(boolean bold) throws IOException {
+		int space = 16;
+		int width = space * 52;
+		int height = space * 52;
+		BufferedImage img = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+		Graphics2D g = img.createGraphics();
+		g.setColor(Color.WHITE);
+		g.fillRect(0, 0, width, height);
+		g.setColor(Color.BLACK);
+		String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+		Renderer renderer = Ezo.bold(bold).renderer((x,y) -> g.fillRect(x, y, 1, 1));
+		for (int y = 0; y < chars.length(); y++) {
+			for (int x = 0; x < chars.length(); x++) {
+				String str = "" + chars.charAt(y) + chars.charAt(x);
+				renderer.locate(x * space, y * space + 12).renderString(str);
+			}
+		}
+		g.dispose();
+		String name = bold ? "ezo_kerning_bold.png" : "ezo_kerning_regular.png";
+		ImageIO.write(img, "PNG", new File(name));
+	}
+}
