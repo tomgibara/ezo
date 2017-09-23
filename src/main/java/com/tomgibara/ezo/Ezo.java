@@ -21,6 +21,35 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.PrimitiveIterator.OfInt;
 
+/**
+ * <p>
+ * Ezo is a pixel font in two weights, <i>regular</i> and <i>bold</i>. It is a
+ * micro-font in which no character exceeds 7 pixels in either dimension but is
+ * designed for readability while retaining consistency, even at such small
+ * sizes. It is a proportional font that includes kerning rules but features
+ * tabular digits (ie. each digit has a consistent width when paired with other
+ * digits).
+ *
+ * <p>
+ * Rendering the typeface is performed by supplying a {@link Plotter} to the
+ * {@link #renderer(Plotter)} method of this class to create a {@link Renderer}.
+ * The {@link #widthOfString(String)} and {@link #widthOfChar(int)} method may
+ * be used to compute spans prior to rendering and this can be combined with
+ * measurements from {@link #ascent()} and {@link #descent()} to compute simple
+ * bounding boxes for text.
+ *
+ * <p>
+ * This class can be used by multiple threads without external synchronization.
+ * Passing <code>null</code> into any method of this class, or its related
+ * classes and interfaces will raise an <code>IllegalArgumentException</code>.
+ *
+ * @see #regular()
+ * @see #bold()
+ *
+ * @author Tom Gibara
+ *
+ */
+
 public final class Ezo {
 
 	// statics
@@ -33,8 +62,30 @@ public final class Ezo {
 	private static final Ezo regularPix = new Ezo(false);
 	private static final Ezo boldPix = new Ezo(true);
 
+	/**
+	 * The regular weight Ezo font.
+	 *
+	 * @return a regular weight Ezo font.
+	 */
+
 	public static final Ezo regular() { return regularPix; }
+
+	/**
+	 * The bold weight Ezo font.
+	 *
+	 * @return a bold weight Ezo font.
+	 */
+
 	public static final Ezo bold() { return boldPix; }
+
+	/**
+	 * An instance of the Ezo font.
+	 *
+	 * @param bold
+	 *            true if a bold weight font is required, false if a regular
+	 *            weight font is required
+	 * @return an Ezo font
+	 */
 
 	public static final Ezo bold(boolean bold) {
 		return bold ? boldPix : regularPix;
@@ -67,13 +118,34 @@ public final class Ezo {
 
 	// public accessors
 
+	/**
+	 * The maximum number of pixels that any character in the typeface extends
+	 * above the baseline.
+	 *
+	 * @return the ascent of the font.
+	 */
+
 	public int ascent() {
 		return ASCENT;
 	}
 
+	/**
+	 * The maximum number of pixels that any character in the typeface extends
+	 * above the baseline.
+	 *
+	 * @return the ascent of the font.
+	 */
+
 	public int descent() {
 		return DESCENT;
 	}
+
+	/**
+	 * Whether the weight of the font is bold, or else regular.
+	 *
+	 * @return true if the font is bold, or false if the fond has regular
+	 *         weight.
+	 */
 
 	public boolean isBold() {
 		return bold;
@@ -81,10 +153,35 @@ public final class Ezo {
 
 	// public methods
 
+	/**
+	 * Creates a new renderer that can draw strings and characters in this font.
+	 *
+	 * @param plotter
+	 *            an object used to plot the pixels with which characters are
+	 *            composed
+	 * @return a renderer for this font.
+	 */
+
 	public Renderer renderer(Plotter plotter) {
 		if (plotter == null) throw new IllegalArgumentException("null plotter");
 		return new Renderer(plotter);
 	}
+
+	/**
+	 * <p>
+	 * Computes the width of the supplied string in this font. Non-printable
+	 * characters and characters not supported by the typeface are treated as
+	 * having zero width.
+	 *
+	 * <p>
+	 * Note that the total width of a string will not necessarily equal the sum
+	 * of its individual characters due to kerning adjustments made between
+	 * adjacent characters.
+	 *
+	 * @param str
+	 *            any string
+	 * @return the width of the string as rendered in this font
+	 */
 
 	public int widthOfString(String str) {
 		if (str == null) throw new IllegalArgumentException("null str");
@@ -102,6 +199,22 @@ public final class Ezo {
 		}
 		return sum == 0 ? 0 : sum - 1;
 	}
+
+	/**
+	 * <p>
+	 * The width of the given character in this font. Non-printable characters
+	 * and characters that are not supported by this font are reported as having
+	 * zero width.
+	 *
+	 * <p>
+	 * In general, it is not possible to compute the width of a string by
+	 * summing its individual character widths because of adjustments made for
+	 * kerning; for this use {@link #widthOfString(String)}.
+	 *
+	 * @param c
+	 *            any character
+	 * @return the width the character in this font
+	 */
 
 	public int widthOfChar(int c) {
 		if (c < 0) throw new IllegalArgumentException("negative c");
