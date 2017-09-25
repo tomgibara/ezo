@@ -295,6 +295,16 @@ public final class Ezo {
 		}
 
 		/**
+		 * The Ezo font that backs this renderer.
+		 * 
+		 * @return the ezo instance from which this renderer was created
+		 */
+
+		public Ezo ezo() {
+			return Ezo.this;
+		}
+
+		/**
 		 * <p>
 		 * Specifies the location of the next character to be rendered by this
 		 * renderer. The <code>x</code> and <code>y</code> coordinates give the
