@@ -74,4 +74,4 @@ The Maven dependency being:
 
 *This library has not yet been released*
 
-[0] https://github.com/tomgibara/ezo/wiki
+[0]: https://github.com/tomgibara/ezo/wiki
