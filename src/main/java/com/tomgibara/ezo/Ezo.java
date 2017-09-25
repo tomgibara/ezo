@@ -258,7 +258,7 @@ public final class Ezo {
 
 		/**
 		 * Renders a pixel at the given coordinates.
-		 * 
+		 *
 		 * @param x the x coordinate
 		 * @param y the y coordinate
 		 */
@@ -272,14 +272,14 @@ public final class Ezo {
 	 * Renders characters and strings in the associated {@link Ezo} font.
 	 * Instances of this class are obtained by supplying a {@link Plotter} to
 	 * the {@link Ezo#renderer(Plotter)} method of {@link Ezo}.
-	 * 
+	 *
 	 * <p>
 	 * Renderers record a location which is advanced each time
 	 * {@link #renderChar(int)} or {@link #renderString(String)} is called. The
 	 * location specifies the position of the next character to be rendered (in
 	 * terms of its left-hand-side and baseline). The location of a newly
 	 * created {@link Renderer} is initialized to (0,0).
-	 * 
+	 *
 	 * <p>
 	 * Multi-threaded use of this class requires external synchronization
 	 */
@@ -296,7 +296,7 @@ public final class Ezo {
 
 		/**
 		 * The Ezo font that backs this renderer.
-		 * 
+		 *
 		 * @return the ezo instance from which this renderer was created
 		 */
 
@@ -310,10 +310,10 @@ public final class Ezo {
 		 * renderer. The <code>x</code> and <code>y</code> coordinates give the
 		 * left-hand=side and baseline of the character respectively. There is
 		 * no prohibition on negative coordinates.
-		 * 
+		 *
 		 * <p>
 		 * Calls to this method can be chained.
-		 * 
+		 *
 		 * @param x
 		 *            the x coordinate of the next character
 		 * @param y
@@ -329,7 +329,7 @@ public final class Ezo {
 
 		/**
 		 * The x coordinate of the next character's left-hand-side.
-		 * 
+		 *
 		 * @return the x coordinate, in pixels
 		 */
 
@@ -339,7 +339,7 @@ public final class Ezo {
 
 		/**
 		 * The y coordinate of the next character's baseline.
-		 * 
+		 *
 		 * @return the y coordinate, in pixels
 		 */
 
@@ -350,7 +350,7 @@ public final class Ezo {
 		/**
 		 * Renders the supplied string. Non-printable and unsupported characters
 		 * are omitted and do not advance the location of the renderer.
-		 * 
+		 *
 		 * @param str
 		 *            the string to be rendered
 		 * @return the number of pixels advanced by the renderer
@@ -376,10 +376,10 @@ public final class Ezo {
 		 * advanced. This method cannot apply kerning rules because it renderers
 		 * only one character at a time; To render characters sequentially, use
 		 * the {@link #renderString(String)} method.
-		 * 
+		 *
 		 * <p>
 		 * Attempting to render non-printable and unsupported characters
-		 * 
+		 *
 		 * @param c
 		 *            the character to render
 		 * @return the number of pixels advanced by the renderer
