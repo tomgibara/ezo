@@ -21,38 +21,19 @@ More samples are available in the associated [github wiki][0].
 ## Example
 
 ```java
-// choose some text to render
-String text = "Hello, World!";
-// a scale for the rendering to improve visibility
-int scale = 8;
-// get an instance of the font, bold() is also an option
-Ezo ezo = Ezo.regular();
-// find out how large the text is
-int width = ezo.widthOfString(text);
-int height = ezo.ascent() + ezo.descent();
-// create a suitably sized image
-BufferedImage image = new BufferedImage(
-   scale * (width + 2),  // width
-   scale * (height + 2), // height
-   TYPE_INT_RGB          // type
-   );
-// create a graphics context
-Graphics2D g = image.createGraphics();
-// blank the image
-g.setColor(Color.WHITE);
-g.fillRect(0, 0, image.getWidth(), image.getHeight());
-// prepare the graphics context
-g.setColor(Color.BLACK);
-g.scale(scale, scale);
-// now fluently render the text
-ezo.renderer((x, y) -> g.fillRect(x, y, 1, 1))
-   .locate(1, ezo.ascent() + 1)
-   .renderString(text);
-// dispose of the graphics
-g.dispose();
-// save the result
-ImageIO.write(image, "PNG", new File("ezo_hello_world.png"));
+String text  = ... // the text to render
+Graphics2D g = ... // a graphics context to render to
+int originX  = ... // x-coordinate of first character
+int originY  = ... // y-coordinate of text baseline
+
+Ezo.regular();                                 // get a font instance
+   .renderer((x, y) -> g.fillRect(x, y, 1, 1)) // define a plotter
+   .locate(originX, originY)                   // position the text
+   .renderString(text);                        // render the text
 ```
+A complete [*"Hello, World!"* example][1], with documentation, is available
+amongst [other sample code][2].
+
 ## Usage
 
 The ezo library is currently in development. A future version will be available
@@ -75,3 +56,5 @@ The Maven dependency being:
 *This library has not yet been released*
 
 [0]: https://github.com/tomgibara/ezo/wiki
+[1]: https://github.com/tomgibara/ezo/blob/master/src/test/java/com/tomgibara/ezo/EzoHelloWorld.java
+[2]: https://github.com/tomgibara/ezo/blob/master/src/test/java/com/tomgibara/ezo/
