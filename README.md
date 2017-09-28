@@ -36,8 +36,7 @@ amongst [other sample code][2].
 
 ## Usage
 
-The ezo library is currently in development. A future version will be available
-from the Maven central repository:
+The ezo library is available from the Maven central repository:
 
 > Group ID:    `com.tomgibara.ezo`
 > Artifact ID: `ezo`
@@ -53,7 +52,9 @@ The Maven dependency being:
 
 ## Release History
 
-*This library has not yet been released*
+**2017.09.28** Version 1.0.0
+
+ Initial release
 
 [0]: https://github.com/tomgibara/ezo/wiki
 [1]: https://github.com/tomgibara/ezo/blob/master/src/test/java/com/tomgibara/ezo/EzoHelloWorld.java
