@@ -5,6 +5,9 @@ A small self-contained pixel font.
 
  * An extremely small font for low density displays.
  * Two font weights: **bold** and regular.
+ * *Italic* styles for both weights.
+ * Option to underline text.
+ * Adjustable inter-word spacing.
  * Open, and consistent character shapes for readability.
  * Kerning rules to maximize character density.
  * Covers the printable ASCII character set.
@@ -51,6 +54,16 @@ The Maven dependency being:
     </dependency>
 
 ## Release History
+
+**tbc** Version 2.0.0
+
+ * Improved Q letter shape.
+ * Corrected vertical position of bold underscore.
+ * Added italic versions of bold and regular fonts.
+ * Added option to change inter-word spacing.
+ * Added option to render characters and strings with underlines.
+ * Introduced distinction between "baseline width" and "rendered width" in API.
+
 
 **2017.09.28** Version 1.0.0
 

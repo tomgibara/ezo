@@ -19,32 +19,42 @@ package com.tomgibara.ezo;
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.util.BitSet;
 import java.util.PrimitiveIterator.OfInt;
 
 /**
  * <p>
- * Ezo is a pixel font in two weights, <i>regular</i> and <i>bold</i>. It is a
- * micro-font in which no character exceeds 7 pixels in either dimension but is
- * designed for readability while retaining consistency, even at such small
- * sizes. It is a proportional font that includes kerning rules but features
- * tabular digits (ie. each digit has a consistent width when paired with other
- * digits).
+ * Ezo is a pixel font in two weights, <i>regular</i> and <i>bold</i>, and with
+ * an italic variant of each. It is a micro-font in which no character exceeds 8
+ * pixels in either dimension but is nevertheless designed for readability while
+ * retaining consistency, even at such small sizes. It is a proportional font
+ * that includes kerning rules but features tabular digits (ie. each digit has a
+ * consistent width when paired with other digits).
+ *
+ * <p>
+ * The typeface also supports underlining via {@link #withUnderline(boolean)}
+ * and adjusted word spacing via {@link #withWidthOfSpace(int)} in addition to
+ * weighting via {@link #withBold(boolean)} and italicization via
+ * {@link #withItalic(boolean)}.
  *
  * <p>
  * Rendering the typeface is performed by supplying a {@link Plotter} to the
  * {@link #renderer(Plotter)} method of this class to create a {@link Renderer}.
- * The {@link #widthOfString(String)} and {@link #widthOfChar(int)} method may
- * be used to compute spans prior to rendering and this can be combined with
- * measurements from {@link #ascent()} and {@link #descent()} to compute simple
- * bounding boxes for text.
+ * The {@link #renderedWidthOfString(String)} and
+ * {@link #renderedWidthOfChar(int)} method may be used to compute spans prior
+ * to rendering and this can be combined with measurements from
+ * {@link #ascent()} and {@link #descent()} to compute simple bounding boxes for
+ * text.
  *
  * <p>
  * This class can be used by multiple threads without external synchronization.
  * Passing <code>null</code> into any method of this class, or its related
- * classes and interfaces will raise an <code>IllegalArgumentException</code>.
+ * classes will raise an <code>IllegalArgumentException</code>.
  *
  * @see #regular()
  * @see #bold()
+ * @see #italic()
+ * @see #boldItalic()
  *
  * @author Tom Gibara
  *
@@ -56,64 +66,158 @@ public final class Ezo {
 
 	private static final int MIN_CHAR = 32;
 	private static final int MAX_CHAR = 127;
+	private static final int CHAR_COUNT = MAX_CHAR - MIN_CHAR;
 	private static final int ASCENT = 6;
 	private static final int DESCENT = 2;
 
-	private static final Ezo regularPix = new Ezo(false);
-	private static final Ezo boldPix = new Ezo(true);
+	private static final Ezo regularEzo    = new Ezo(false, false);
+	private static final Ezo boldEzo       = new Ezo(true,  false);
+	private static final Ezo italicEzo     = new Ezo(false, true );
+	private static final Ezo boldItalicEzo = new Ezo(true,  true );
 
 	/**
 	 * The regular weight Ezo font.
 	 *
-	 * @return a regular weight Ezo font.
+	 * @return a regular weight Ezo font
 	 */
 
-	public static final Ezo regular() { return regularPix; }
+	public static final Ezo regular() { return regularEzo; }
 
 	/**
 	 * The bold weight Ezo font.
 	 *
-	 * @return a bold weight Ezo font.
+	 * @return a bold weight Ezo font
 	 */
 
-	public static final Ezo bold() { return boldPix; }
+	public static final Ezo bold() { return boldEzo; }
 
 	/**
-	 * An instance of the Ezo font.
+	 * The italic Ezo font.
 	 *
-	 * @param bold
-	 *            true if a bold weight font is required, false if a regular
-	 *            weight font is required
-	 * @return an Ezo font
+	 * @return the italic Ezo font
 	 */
 
-	public static final Ezo bold(boolean bold) {
-		return bold ? boldPix : regularPix;
-	}
+	public static final Ezo italic() { return italicEzo; }
 
+	/**
+	 * The bold weight italic Ezo font.
+	 *
+	 * @return the bold weight italic Ezo font
+	 */
+
+	public static final Ezo boldItalic() { return boldItalicEzo; }
+
+	// font parameters
 	private final boolean bold;
+	private final boolean italic;
+	private final boolean underline;
+	private final int     spaceWidth;
 
-	// widths contains the width of the character in pixels, this includes a one pixel space.
-	private final byte[] widths = new byte[MAX_CHAR];
+	// font data
+	private final byte[] offsets;   // distance in pixels to start of character on baseline
+	private final byte[] baselines; // width in pixels of character on baseline
+	private final byte[] widths;    // widths contains the width of the character in pixels
+	private final byte[] classes;   // classes contains the classifications used to kern individual letter pairs.
+	private final long[] bitmaps;   // bitmaps contains the the individual glyph bitmaps
 
-	// classes contains the class of a character which is used to kern individual letter pairs.
-	private final byte[] classes = new byte[MAX_CHAR];
-
-	// bitmaps contains the the individual glyph bitmaps
-	private final long[] bitmaps = new long[MAX_CHAR];
-
-	private Ezo(boolean bold) {
+	// constructor for static instances only
+	private Ezo(boolean bold, boolean italic) {
 		this.bold = bold;
-		String path = bold ? "/bold.bin" : "/regular.bin";
+		this.italic = italic;
+		this.underline = false;
+		offsets   = new byte[MAX_CHAR];
+		baselines = new byte[MAX_CHAR];
+		widths    = new byte[MAX_CHAR];
+		classes   = new byte[MAX_CHAR];
+		bitmaps   = new long[MAX_CHAR];
+
+		String path = italic ?
+				bold ? "/bold-italic.bin" : "/italic.bin" :
+				bold ? "/bold.bin" : "/regular.bin";
 		try (DataInputStream in = new DataInputStream(new BufferedInputStream(Ezo.class.getResourceAsStream(path)))) {
-			in.readFully(widths, MIN_CHAR, MAX_CHAR - MIN_CHAR);
-			in.readFully(classes, MIN_CHAR, MAX_CHAR - MIN_CHAR);
+			in.readFully(offsets,   MIN_CHAR, CHAR_COUNT);
+			in.readFully(baselines, MIN_CHAR, CHAR_COUNT);
+			in.readFully(widths,    MIN_CHAR, CHAR_COUNT);
+			in.readFully(classes,   MIN_CHAR, CHAR_COUNT);
 			for (int i = MIN_CHAR; i < MAX_CHAR; i++) {
 				bitmaps[i] = in.readLong();
 			}
 		} catch (IOException e) {
 			throw new RuntimeException("failed to load ezo data from resource " + path);
 		}
+		this.spaceWidth = widths[MIN_CHAR];
+	}
+
+	// constructor for derived instances
+	private Ezo(boolean bold, boolean italic, boolean underline, int spaceWidth) {
+		Ezo src = italic ?
+				bold ? boldItalicEzo : italicEzo :
+				bold ? boldEzo : regularEzo;
+		this.bold = bold;
+		this.italic = italic;
+		this.underline = underline;
+		this.offsets = src.offsets;
+		this.baselines = src.baselines;
+		this.widths = src.widths;
+		this.classes = src.classes;
+		this.bitmaps = src.bitmaps;
+		this.spaceWidth = spaceWidth < 0 ? widths[MIN_CHAR] : spaceWidth;
+	}
+
+	// public constructors
+
+	/**
+	 * This style of the Ezo font the with weight as specified.
+	 *
+	 * @param bold
+	 *            true if a bold weight font is required, false if a regular
+	 *            weight font is required
+	 * @return an Ezo font
+	 * @see #isBold()
+	 */
+
+	public Ezo withBold(boolean bold) {
+		if (bold == this.bold) return this;
+		if (this == regularEzo) return boldEzo;
+		if (this == boldEzo) return regularEzo;
+		if (this == italicEzo) return boldItalicEzo;
+		return new Ezo(bold, italic, underline, spaceWidth);
+	}
+
+	/**
+	 * This style of the Ezo font with italics as specified.
+	 *
+	 * @param italic
+	 *            true if an italic font is required, false if a non-italic font
+	 *            is required
+	 * @return an Ezo font
+	 * @see #isItalic()
+	 */
+
+	public Ezo withItalic(boolean italic) {
+		if (italic == this.italic) return this;
+		if (this == regularEzo   ) return italicEzo;
+		if (this == boldEzo      ) return boldItalicEzo;
+		if (this == italicEzo    ) return regularEzo;
+		if (this == boldItalicEzo) return boldEzo;
+		return new Ezo(bold, italic, underline, spaceWidth);
+	}
+
+	public Ezo withUnderline(boolean underline) {
+		return new Ezo(bold, italic, underline, spaceWidth);
+	}
+	/**
+	 * This style of the Ezo font with the "space width" as specified.
+	 *
+	 * @param spaceWidth
+	 *            a non-negative size in pixels
+	 * @return an Ezo font
+	 * @see #widthOfSpace()
+	 */
+
+	public Ezo withWidthOfSpace(int spaceWidth) {
+		if (spaceWidth < 0) throw new IllegalArgumentException("negative spaceWidth");
+		return this.spaceWidth == spaceWidth ? this : new Ezo(bold, italic, underline, spaceWidth);
 	}
 
 	// public accessors
@@ -145,10 +249,34 @@ public final class Ezo {
 	 *
 	 * @return true if the font is bold, or false if the fond has regular
 	 *         weight.
+	 * @see #withBold(boolean)
 	 */
 
 	public boolean isBold() {
 		return bold;
+	}
+
+	/**
+	 * Whether the font is italic.
+	 *
+	 * @return true if the font is italic, or false if not
+	 * @see #withItalic(boolean)
+	 */
+
+	public boolean isItalic() {
+		return italic;
+	}
+
+	/**
+	 * A convenient method for identifying the width of a space. Equivalent to
+	 * {@code widthOf(' ')}.
+	 *
+	 * @return the width of a space in this font
+	 * @see #withWidthOfSpace(int)
+	 */
+
+	public int widthOfSpace() {
+		return spaceWidth;
 	}
 
 	// public methods
@@ -169,63 +297,150 @@ public final class Ezo {
 
 	/**
 	 * <p>
-	 * Computes the width of the supplied string in this font. Non-printable
-	 * characters and characters not supported by the typeface are treated as
-	 * having zero width.
+	 * Computes the distance advanced along the baseline when rendering of the
+	 * supplied string in this font. Non-printable characters and characters not
+	 * supported by the typeface are treated as having zero width.
 	 *
 	 * <p>
 	 * Note that the total width of a string will not necessarily equal the sum
 	 * of its individual characters due to kerning adjustments made between
 	 * adjacent characters.
 	 *
+	 * <p>
+	 * Note also that this is not necessarily the same as the rendered width
+	 * since glyphs may project beyond the baseline.
+	 *
 	 * @param str
 	 *            any string
 	 * @return the width of the string as rendered in this font
+	 * @see #renderedWidthOfString(String)
 	 */
 
-	public int widthOfString(String str) {
+	public int baselineWidthOfString(String str) {
 		if (str == null) throw new IllegalArgumentException("null str");
 		OfInt cs = str.codePoints().iterator();
 		int sum = 0;
 		int prev = -1;
 		while (cs.hasNext()) {
 			int next = cs.nextInt();
-			int w = width(next);
-			if (w > 0) {
-				sum += w;
-				if (prev != -1 && collapse(prev, next)) sum--;
-			}
+			sum += delta(prev, next);
+			sum += baselineWidth(next);
 			prev = next;
 		}
-		return sum == 0 ? 0 : sum - 1;
+		return sum;
 	}
 
 	/**
 	 * <p>
-	 * The width of the given character in this font. Non-printable characters
-	 * and characters that are not supported by this font are reported as having
-	 * zero width.
+	 * Computes the width required to accommodate a rendering of the supplied
+	 * string in this font. Non-printable characters and characters not
+	 * supported by the typeface are treated as having zero width.
+	 *
+	 * <p>
+	 * Note that the total width of a string will not necessarily equal the sum
+	 * of its individual characters due to kerning adjustments made between
+	 * adjacent characters.
+	 *
+	 * <p>
+	 * Note also that this is not necessarily the same as the baseline width
+	 * since glyphs may project beyond the baseline.
+	 *
+	 * @param str
+	 *            any string
+	 * @return the width of the string as rendered in this font
+	 * @see #baselineWidthOfString(String)
+	 */
+
+	public int renderedWidthOfString(String str) {
+		int bw = baselineWidthOfString(str);
+		if (bw == 0) return 0;
+		// ideally should use codepoints, but in practice, all surrogate-pair enchoded yield zero length at this time
+		int c = str.charAt(str.length() - 1);
+		return bw - baselineWidth(c) + pixelWidth(c) - offset(c);
+	}
+
+	/**
+	 * <p>
+	 * The distance advanced along the baseline when rendering the specified
+	 * character in this font. Non-printable characters and characters that are
+	 * not supported by this font are reported as having zero width.
 	 *
 	 * <p>
 	 * In general, it is not possible to compute the width of a string by
 	 * summing its individual character widths because of adjustments made for
-	 * kerning; for this use {@link #widthOfString(String)}.
+	 * kerning; for this use {@link #baselineWidthOfString(String)}.
 	 *
 	 * @param c
 	 *            any character
 	 * @return the width the character in this font
 	 */
 
-	public int widthOfChar(int c) {
+	public int baselineWidthOfChar(int c) {
 		if (c < 0) throw new IllegalArgumentException("negative c");
-		int w = width(c);
-		return w == 0 ? 0 : w - 1;
+		return baselineWidth(c);
+	}
+
+	/**
+	 * <p>
+	 * The the width required to accommodate a rendering of the supplied
+	 * character in this font. Non-printable characters and characters that are
+	 * not supported by this font are reported as having zero width.
+	 *
+	 * <p>
+	 * In general, it is not possible to compute the width of a string by
+	 * summing its individual character widths because of adjustments made for
+	 * kerning; for this use {@link #renderedWidthOfString(String)}.
+	 *
+	 * @param c
+	 *            any character
+	 * @return the width the character in this font
+	 */
+
+	public int renderedWidthOfChar(int c) {
+		if (c < 0) throw new IllegalArgumentException("negative c");
+		return pixelWidth(c);
+	}
+
+	//TODO document or change
+	public int accommodatedCharCount(String str, int width, int ellipsisWidth) {
+		if (str == null) throw new IllegalArgumentException("null str");
+		OfInt cs = str.codePoints().iterator();
+		int i = 0;
+		int sum = 0;
+		int prev = -1;
+		while (cs.hasNext()) {
+			int next = cs.nextInt();
+			int delta = delta(prev, next);
+			int pixelWidth = pixelWidth(next);
+			int offset = offset(next);
+			if (sum + delta + pixelWidth - offset > width) {
+				if (ellipsisWidth == 0) return i;
+				if (ellipsisWidth > width) return 0;
+				return accommodatedCharCount(str, width - ellipsisWidth, 0); 
+			}
+			sum += delta + baselineWidth(next);
+			prev = next;
+			i ++;
+		}
+		return i;
 	}
 
 	// private utility methods
 
-	private int width(int c) {
-		return c >= MAX_CHAR ? 0 : widths[c];
+	private int pixelWidth(int c) {
+		if (c == MIN_CHAR) return spaceWidth;
+		if (c >= MAX_CHAR) return 0;
+		return widths[c];
+	}
+
+	private int baselineWidth(int c) {
+		if (c == MIN_CHAR) return spaceWidth;
+		if (c >= MAX_CHAR) return 0;
+		return baselines[c];
+	}
+
+	private int offset(int c) {
+		return c >= MAX_CHAR ? 0 : offsets[c];
 	}
 
 	// may only be called with valid characters
@@ -234,7 +449,6 @@ public final class Ezo {
 		if (prev =='_' && next == '_') return true;  // special case: join underscores
 		int prevClass = classes[prev];
 		int nextClass = classes[next];
-		if (nextClass == 11) return true; // underhangs can always be collapsed
 		if (prevClass == -1 || nextClass == -1) return false; // no rules apply to either
 		if (prevClass <= 3) return false; // the previous character is small, so no collapse
 		if (prevClass == 10 && (nextClass <= 3 || nextClass >=9)) return true; // tall characters like f can accommodate all non-big (or ligature) characters
@@ -242,6 +456,16 @@ public final class Ezo {
 		if (prevClass > 7) return false; // curve fitting only applies to first 8 classes
 		int pattern = prevClass & 3;
 		return pattern == (pattern & nextClass);
+	}
+
+	private int delta(int prev, int next) {
+		if (prev == -1) return 0; // don't advance on first character
+		if (prev == MIN_CHAR) return 0; // don't advance further after a space
+		if (baselineWidth(prev) == 0) return 0; // don't advance after non-printable character
+		int delta = 1; // assume a standard space of 1 px
+		if (collapse(prev, next)) delta --;
+		// special cases here
+		return delta;
 	}
 
 	// inner classes
@@ -361,11 +585,13 @@ public final class Ezo {
 			OfInt cs = str.chars().iterator();
 			int oldX = x;
 			int prev = -1;
+			BitSet line = underline ? new BitSet() : null;
 			while (cs.hasNext()) {
 				int next = cs.nextInt();
-				renderImpl(prev, next);
+				renderImpl(prev, next, line, oldX - 1);
 				prev = next;
 			}
+			if (line != null && prev != -1) renderLine(line, oldX, x - baselineWidth(prev) + pixelWidth(prev) - offset(prev));
 			return x - oldX;
 
 		}
@@ -388,25 +614,39 @@ public final class Ezo {
 		public int renderChar(int c) {
 			if (c < 0) throw new IllegalArgumentException();
 			int oldX = x;
-			renderImpl(-1, c);
+			BitSet line = underline ? new BitSet() : null;
+			renderImpl(-1, c, line, oldX - 1);
+			if (line != null) renderLine(line, oldX, pixelWidth(c) - offset(c));
 			return x - oldX;
 		}
 
-		private void renderImpl(int prev, int next) {
-			int w = width(next);
-			if (w == -1) return;
-			boolean collapse = prev != -1 && widthOfChar(prev) != 0 && collapse(prev, next);
-			if (collapse) x --;
+		private void renderImpl(int prev, int next, BitSet line, int lineOffset) {
+			int w = pixelWidth(next);
+			if (w <= 0) return;
+			x += delta(prev, next);
 			long bits = bitmaps[next];
 			int b = 0;
+			int o = offset(next);
+			x -= o;
 			for (int py = y - ASCENT; py < y + DESCENT; py++) {
 				b = (b + 7) & ~7;
 				for (int px = x; px < x + w; px++, b++) {
-					if ((bits << b) < 0L) plotter.plot(px, py);
+					boolean bit = (bits << b) < 0L;
+					if (!bit) continue;
+					plotter.plot(px, py);
+					if (line == null || py != y + 1) continue;
+					line.set(px - lineOffset);
 				}
 			}
-			x += w;
+			x += o + baselineWidth(next);
 		}
 
+		private void renderLine(BitSet line, int from, int to) {
+			int len = to - from;
+			for (int px = 1; px <= len; px++) {
+				boolean skip = line.get(px - 1) || line.get(px) || line.get(px + 1);
+				if (!skip) plotter.plot(px + from - 1, y + DESCENT - 1);
+			}
+		}
 	}
 }

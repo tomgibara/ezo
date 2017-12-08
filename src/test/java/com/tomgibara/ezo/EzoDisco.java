@@ -40,7 +40,7 @@ public class EzoDisco {
 		String text = "Disco";
 		int scale = 12;
 		Ezo ezo = Ezo.bold();
-		int width = ezo.widthOfString(text);
+		int width = ezo.renderedWidthOfString(text);
 		int height = ezo.ascent() + ezo.descent();
 		BufferedImage image = new BufferedImage(scale * (width + 2), scale * (height + 2), TYPE_INT_RGB);
 		Graphics2D g = image.createGraphics();

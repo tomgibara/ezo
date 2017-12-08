@@ -32,7 +32,7 @@ public class EzoSampler {
 
 	private static final String[] bigLines = new String[] {
 			"ABCDEFGHI",
-			"IJKLMNOPQ",
+			"JKLMNOPQ",
 			"RSTUVWXYZ",
 			"abcdefghijklmn",
 			"opqrstuvwxyz",
@@ -67,25 +67,30 @@ public class EzoSampler {
 
 	public static void main(String... args) throws IOException {
 		int width = 512;
-		int height = 512;
+		int height = 1024;
 		BufferedImage img = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
 		Graphics2D g = img.createGraphics();
 		g.setColor(Color.WHITE);
 		g.fillRect(0, 0, width, height);
 		g.setColor(Color.BLACK);
 		g.drawRect(0, 0, width - 1, height - 1);
-		renderSample(g, 6, false);
+		renderSample(g, 6, false, false);
 		g.translate(width / 2, 0);
-		renderSample(g, 0, true);
+		renderSample(g, 0, true, false);
+		g.translate(0, height / 2);
+		renderSample(g, 0, true, true);
+		g.translate(-width / 2, 0);
+		renderSample(g, 6, false, true);
 		g.dispose();
 		ImageIO.write(img, "PNG", new File("ezo_sampler.png"));
 	}
 
-	private static void renderSample(Graphics2D g, int inset, boolean bold) throws IOException {
+	private static void renderSample(Graphics2D g, int inset, boolean bold, boolean italic) throws IOException {
 		int s = 3;
-		Renderer bigRenderer = Ezo.bold(bold).renderer((x,y) -> g.fillRect(x*s, y*s, s, s));
+		Ezo ezo = Ezo.regular().withBold(bold).withItalic(italic);
+		Renderer bigRenderer = ezo.renderer((x,y) -> g.fillRect(x*s, y*s, s, s));
 		writeLines(bigRenderer, inset, 12, 10, bigLines);
-		Renderer smallRenderer = Ezo.bold(bold).renderer((x,y) -> g.fillRect(x, y, 1, 1));
+		Renderer smallRenderer = ezo.renderer((x,y) -> g.fillRect(x, y, 1, 1));
 		writeLines(smallRenderer, inset * s, bigRenderer.y() * s + 26, 10, smallLines);
 	}
 

@@ -14,7 +14,7 @@ public class EzoUnicode {
 	public static void main(String... args) {
 		String text = "Ezo - a Java renderered pixel font";
 		Ezo ezo = Ezo.bold();
-		int width = (ezo.widthOfString(text) + 2) / 2;
+		int width = (ezo.renderedWidthOfString(text) + 2) / 2;
 		int height = (ezo.ascent() + ezo.descent() + 2) / 2;
 		char[] chars = new char[width * height];
 		ezo.renderer((x, y) -> {

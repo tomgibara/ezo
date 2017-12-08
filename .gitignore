@@ -14,3 +14,6 @@ buildNumber.properties
 .classpath
 .project
 .settings/
+
+/*.png
+*~

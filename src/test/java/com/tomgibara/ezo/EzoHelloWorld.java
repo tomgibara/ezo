@@ -27,7 +27,6 @@ import java.io.IOException;
 import javax.imageio.ImageIO;
 
 import com.tomgibara.ezo.Ezo;
-import com.tomgibara.ezo.Ezo.Renderer;
 
 public class EzoHelloWorld {
 
@@ -39,7 +38,7 @@ public class EzoHelloWorld {
 		// get an instance of the font, bold() is also an option
 		Ezo ezo = Ezo.regular();
 		// find out how large the text is
-		int width = ezo.widthOfString(text);
+		int width = ezo.renderedWidthOfString(text);
 		int height = ezo.ascent() + ezo.descent();
 		// create a suitably sized image
 		BufferedImage image = new BufferedImage(scale * (width + 2), scale * (height + 2), TYPE_INT_RGB);
