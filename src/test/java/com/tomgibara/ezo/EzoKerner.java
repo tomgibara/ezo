@@ -30,22 +30,29 @@ import com.tomgibara.ezo.Ezo.Renderer;
 public class EzoKerner {
 
 	public static void main(String... args) throws IOException {
-		checkKern(false, false);
-		checkKern(true,  false);
-		checkKern(false, true );
-		checkKern(true,  true );
+		checkKern(false, false, false);
+		checkKern(true,  false, false);
+		checkKern(false, true , false);
+		checkKern(true,  true , false);
+		checkKern(false, false, true );
+		checkKern(true,  false, true );
+		checkKern(false, true , true );
+		checkKern(true,  true , true );
 	}
 
-	private static void checkKern(boolean bold, boolean italic) throws IOException {
+	private static void checkKern(boolean bold, boolean italic, boolean full) throws IOException {
+		String chars = full ?
+				"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~" :
+				"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+		int count = chars.length();
 		int space = 16;
-		int width = space * 52;
-		int height = space * 52;
+		int width = space * count;
+		int height = space * count;
 		BufferedImage img = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
 		Graphics2D g = img.createGraphics();
 		g.setColor(Color.WHITE);
 		g.fillRect(0, 0, width, height);
 		g.setColor(Color.BLACK);
-		String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 		Renderer renderer = Ezo.regular().withBold(bold).withItalic(italic).renderer((x,y) -> g.fillRect(x, y, 1, 1));
 		for (int y = 0; y < chars.length(); y++) {
 			for (int x = 0; x < chars.length(); x++) {
@@ -54,9 +61,12 @@ public class EzoKerner {
 			}
 		}
 		g.dispose();
-		String name = italic ?
-				bold ? "ezo_kerning_bold_italic.png" : "ezo_kerning_italic.png" :
-				bold ? "ezo_kerning_bold.png" : "ezo_kerning_regular.png";
+		String style = italic ?
+				bold ? "bold_italic" : "italic" :
+				bold ? "bold" : "regular";
+		StringBuilder sb = new StringBuilder("ezo_kerning_").append(style);
+		if (full) sb.append("_full");
+		String name = sb.append(".png").toString();
 		ImageIO.write(img, "PNG", new File(name));
 	}
 }
