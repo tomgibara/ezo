@@ -118,6 +118,7 @@ public final class Ezo {
 	private final byte[] baselines; // width in pixels of character on baseline
 	private final byte[] widths;    // widths contains the width of the character in pixels
 	private final byte[] classes;   // classes contains the classifications used to kern individual letter pairs.
+	private final byte[] italics;   // italics contains the classifications used adjust italic kerning.
 	private final long[] bitmaps;   // bitmaps contains the the individual glyph bitmaps
 
 	// constructor for static instances only
@@ -129,6 +130,7 @@ public final class Ezo {
 		baselines = new byte[MAX_CHAR];
 		widths    = new byte[MAX_CHAR];
 		classes   = new byte[MAX_CHAR];
+		italics   = new byte[MAX_CHAR];
 		bitmaps   = new long[MAX_CHAR];
 
 		String path = italic ?
@@ -139,6 +141,7 @@ public final class Ezo {
 			in.readFully(baselines, MIN_CHAR, CHAR_COUNT);
 			in.readFully(widths,    MIN_CHAR, CHAR_COUNT);
 			in.readFully(classes,   MIN_CHAR, CHAR_COUNT);
+			in.readFully(italics,   MIN_CHAR, CHAR_COUNT);
 			for (int i = MIN_CHAR; i < MAX_CHAR; i++) {
 				bitmaps[i] = in.readLong();
 			}
@@ -160,6 +163,7 @@ public final class Ezo {
 		this.baselines = src.baselines;
 		this.widths = src.widths;
 		this.classes = src.classes;
+		this.italics = src.italics;
 		this.bitmaps = src.bitmaps;
 		this.spaceWidth = spaceWidth < 0 ? widths[MIN_CHAR] : spaceWidth;
 	}
@@ -463,7 +467,7 @@ public final class Ezo {
 		if (prev =='_' && next == '_') return true;  // special case: join underscores
 		int prevClass = classes[prev];
 		int nextClass = classes[next];
-		if (prevClass == -1 || nextClass == -1) return false; // no rules apply to either
+		if (prevClass == -1 || nextClass == -1) return false; // no rules apply
 		if (prevClass <= 3) return false; // the previous character is small, so no collapse
 		if (prevClass == 10 && (nextClass <= 3 || nextClass >=9)) return true; // tall characters like f can accommodate all non-big (or ligature) characters
 		if (nextClass > 3) return false; // the next character is big, so no collapse
@@ -472,12 +476,26 @@ public final class Ezo {
 		return pattern == (pattern & nextClass);
 	}
 
+	private boolean collapseItalic(int prev, int next) {
+		if (!italic) return false; // at present, non-italic fonts don't use this extra class
+		int prevClass = italics[prev];
+		int nextClass = italics[next];
+		if (prevClass == -1 || nextClass == -1) return false; // no rules apply
+		// bulge right/both + hollow left/both
+		// hollow right/both/oth + bulge left/both/oth
+		boolean a =
+				(prevClass == 1 || prevClass == 2                  ) && (nextClass == 3 || nextClass == 5                  ) ||
+				(prevClass == 4 || prevClass == 5 || prevClass == 6) && (nextClass == 0 || nextClass == 2 || nextClass == 6);
+		return a;
+	}
+
 	private int delta(int prev, int next) {
 		if (prev == -1) return 0; // don't advance on first character
 		if (prev == MIN_CHAR) return 0; // don't advance further after a space
 		if (baselineWidth(prev) == 0) return 0; // don't advance after non-printable character
 		int delta = 1; // assume a standard space of 1 px
 		if (collapse(prev, next)) delta --;
+		if (collapseItalic(prev, next)) delta --;
 		// special cases here
 		return delta;
 	}
