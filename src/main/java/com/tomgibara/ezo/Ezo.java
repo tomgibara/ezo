@@ -401,7 +401,21 @@ public final class Ezo {
 		return pixelWidth(c);
 	}
 
-	//TODO document or change
+	/**
+	 * Calculates the number of characters from a given string that will fit
+	 * into a specified width when rendered in this font.
+	 *
+	 * @param str
+	 *            the characters being measured
+	 * @param width
+	 *            the width of the gap into which the characters are to fit
+	 * @param ellipsisWidth
+	 *            the width of an ellipsis that will be displayed if the string
+	 *            is truncated, zero if no ellipsis is to be displayed
+	 * @return the number of characters in the string that fit ranging from zero
+	 *         to the length of the string inclusive
+	 */
+
 	public int accommodatedCharCount(String str, int width, int ellipsisWidth) {
 		if (str == null) throw new IllegalArgumentException("null str");
 		OfInt cs = str.codePoints().iterator();
