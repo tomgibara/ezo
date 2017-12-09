@@ -43,21 +43,22 @@ The ezo library is available from the Maven central repository:
 
 > Group ID:    `com.tomgibara.ezo`
 > Artifact ID: `ezo`
-> Version:     `1.0.0`
+> Version:     `2.0.0`
 
 The Maven dependency being:
 
     <dependency>
       <groupId>com.tomgibara.ezo</groupId>
       <artifactId>ezo</artifactId>
-      <version>1.0.0</version>
+      <version>2.0.0</version>
     </dependency>
 
 ## Release History
 
-**tbc** Version 2.0.0
+**2017.12.09** Version 2.0.0
 
  * Improved Q letter shape.
+ * Improved bold % symbol.
  * Corrected vertical position of bold underscore.
  * Added italic versions of bold and regular fonts.
  * Added option to change inter-word spacing.
